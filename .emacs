@@ -162,8 +162,9 @@
              "~/emacs/muse")
 (load "lfx-muse.el")
 
-;; Xcscope                                                                                                                                                                        
-(load-file "~/emacs/cscope-15.7a/contrib/xcscope/xcscope.el")
+;; Xcscope
+;; Current version 15.7a
+(load-file "~/emacs/cscope/xcscope.el")
 
 
 (server-start)
