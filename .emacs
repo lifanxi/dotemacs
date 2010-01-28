@@ -93,15 +93,25 @@
 
 ;; Hotkey bindings
 (global-set-key [f1] 'woman)
+(global-set-key [f2] 'calendar)
 (global-set-key [f3] 'ff-find-other-file)
 (global-set-key [f4] 'goto-line)
 (global-set-key [f5] 'shell)
 (global-set-key [f7] 'compile)
 '(compile-command "make")
-(global-set-key [f8] 'calendar)
+(global-set-key [f8] 'kill-this-buffer)
 (global-set-key [f11] 'bs-cycle-previous)
 (global-set-key [f12] 'bs-cycle-next)
 ;; (global-set-key [(control z)] 'undo)
+
+;; Key for certain modes
+(add-hook 'gud-mode-hook
+    (lambda ()
+        (define-key gud-mode-map [f5] 'gud-go)
+        (define-key gud-mode-map [f10] 'gud-next)
+        (define-key gud-mode-map [f11] 'gud-step)
+    )
+)
 
 ;; Tab Settings
 (setq-default indent-tabs-mode nil)
