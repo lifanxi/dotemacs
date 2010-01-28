@@ -13,7 +13,7 @@ cscope:
 	 )
 
 .PHONY: install
-install:
+install: cscope
 	( \
 	cd /tmp/cscope-15.7a ; \
 	make install; \
@@ -22,3 +22,4 @@ install:
 	cp ~/emacs/p4 /usr/local/bin/ ;\
 	chmod a+x /usr/local/bin/p4 \
     )
+
