@@ -43,8 +43,8 @@
 (setq x-select-enable-clipboard t)
 (setq bookmark-default-file "~/emacs/emacs.bmk")
 (global-hl-line-mode 1)
-(set-face-background 'hl-line "#fafaff")  ;; Emacs 22 Only
-;; (set-face-background 'highlight "#fafaff")  ;; Emacs 21 Only
+;;(set-face-background 'hl-line "#fafaff")  ;; Emacs 22 Only
+(set-face-background 'highlight "#fafaff")  ;; Emacs 21 Only
 ;; (setq lazy-lock-defer-on-scrolling t)
 ;; (setq font-lock-support-mode 'lazy-lock-mode)
 ;; (setq font-lock-maximum-decoration t)
@@ -164,9 +164,17 @@
 
 ;; Xcscope
 ;; Current version 15.7a
-(load-file "~/emacs/cscope/xcscope.el")
+
 
 ;; Perforce 
 (load-library "p4")
+
+;; Color theme
+(add-to-list 'load-path
+             "~/emacs/color-theme")
+(load-file "~/emacs/color-theme/color-theme.el")
+(require 'color-theme)
+(color-theme-initialize)
+(color-theme-dark-laptop)
 
 (server-start)
