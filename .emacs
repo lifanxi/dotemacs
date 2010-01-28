@@ -44,7 +44,7 @@
 (setq bookmark-default-file "~/emacs/emacs.bmk")
 (global-hl-line-mode 1)
 (set-face-background 'hl-line "#fafaff")  ;; Emacs 22 Only
-;(set-face-background 'highlight "#330")  ;; Emacs 21 Only
+;; (set-face-background 'highlight "#fafaff")  ;; Emacs 21 Only
 ;; (setq lazy-lock-defer-on-scrolling t)
 ;; (setq font-lock-support-mode 'lazy-lock-mode)
 ;; (setq font-lock-maximum-decoration t)
