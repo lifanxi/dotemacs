@@ -166,5 +166,7 @@
 ;; Current version 15.7a
 (load-file "~/emacs/cscope/xcscope.el")
 
+;; Perforce 
+(load-library "p4")
 
 (server-start)
