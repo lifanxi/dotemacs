@@ -162,4 +162,8 @@
              "~/emacs/muse")
 (load "lfx-muse.el")
 
+;; Xcscope                                                                                                                                                                        
+(load-file "~/emacs/cscope-15.7a/contrib/xcscope/xcscope.el")
+
+
 (server-start)
