@@ -1,6 +1,7 @@
 ;;; muse-publish.el --- base publishing implementation
 
-;; Copyright (C) 2004, 2005, 2006, 2007, 2008  Free Software Foundation, Inc.
+;; Copyright (C) 2004, 2005, 2006, 2007, 2008, 2009, 2010
+;;   Free Software Foundation, Inc.
 
 ;; This file is part of Emacs Muse.  It is not part of GNU Emacs.
 
@@ -155,7 +156,7 @@ If non-nil, publish comments using the markup of the current style."
 
     ;; support table.el style tables
     (2300 ,(concat "^" muse-table-el-border-regexp "\n"
-                   "\\(\\(" muse-table-line-regexp "\n\\)+"
+                   "\\(\\(" muse-table-el-line-regexp "\n\\)+"
                    "\\(" muse-table-el-border-regexp "\\)"
                    "\\(\n\\|\\'\\)\\)+")
           0 table-el)
@@ -273,6 +274,7 @@ current style."
     ("br"       nil nil nil muse-publish-br-tag)
     ("lisp"     t   t   nil muse-publish-lisp-tag)
     ("class"    t   t   nil muse-publish-class-tag)
+    ("div"      t   t   nil muse-publish-div-tag)
     ("command"  t   t   nil muse-publish-command-tag)
     ("perl"     t   t   nil muse-publish-perl-tag)
     ("php"      t   t   nil muse-publish-php-tag)
@@ -329,10 +331,28 @@ See `muse-publish-markup-tags' for details."
   :type '(alist :key-type character :value-type string)
   :group 'muse-publish)
 
+(defcustom muse-publish-enable-local-variables nil
+  "If non-nil, interpret local variables in a file when publishing."
+  :type 'boolean
+  :group 'muse-publish)
+
+(defcustom muse-publish-enable-dangerous-tags t
+  "If non-nil, publish tags like <lisp> and <command> that can
+call external programs or expose sensitive information.
+Otherwise, ignore tags like this.
+
+This is useful to set to nil when the file to publish is coming
+from an untrusted source."
+  :type 'boolean
+  :group 'muse-publish)
+
 (defvar muse-publishing-p nil
-  "Set to t while a page is being published.")
+  "This is set to t while a page is being published.")
 (defvar muse-batch-publishing-p nil
-  "Set to t while a page is being batch published.")
+  "This is set to t while a page is being batch published.")
+(defvar muse-inhibit-before-publish-hook nil
+  "This is set to t when publishing a file rather than just a buffer.
+It is used by `muse-publish-markup-buffer'.")
 (defvar muse-publishing-styles nil
   "The publishing styles that Muse recognizes.
 This is automatically generated when loading publishing styles.")
@@ -514,7 +534,13 @@ to the text with ARGS as parameters."
         (if (and verbose (not muse-batch-publishing-p))
             (message "Publishing %s...%d%%" name
                      (* (/ (float (+ (point) base)) limit) 100)))
-        (while (and regexp (setq pos (re-search-forward regexp nil t)))
+        (while (and regexp (progn
+                             (when (and (get-text-property (point) 'read-only)
+                                        (> (point) (point-min)))
+                               (goto-char (or (next-single-property-change
+                                               (point) 'read-only)
+                                              (point-max))))
+                             (setq pos (re-search-forward regexp nil t))))
           (if (and verbose (not muse-batch-publishing-p))
               (message "Publishing %s...%d%%" name
                        (* (/ (float (+ (point) base)) limit) 100)))
@@ -622,7 +648,8 @@ normally."
         (muse-publishing-p t)
         (inhibit-read-only t))
     (run-hooks 'muse-update-values-hook)
-    (run-hooks 'muse-before-publish-hook)
+    (unless muse-inhibit-before-publish-hook
+      (run-hooks 'muse-before-publish-hook))
     (muse-publish-markup-region (point-min) (point-max) title style)
     (goto-char (point-min))
     (when style-header
@@ -768,9 +795,7 @@ The result is placed in a new buffer that includes TITLE in its name."
   (when (interactive-p)
     (unless title (setq title (read-string "Title: ")))
     (unless style (setq style (muse-publish-get-style))))
-  (let ((muse-publishing-current-style style)
-        (muse-publishing-p t)
-        (text (buffer-substring beg end))
+  (let ((text (buffer-substring beg end))
         (buf (generate-new-buffer (concat "*Muse: " title "*"))))
     (with-current-buffer buf
       (insert text)
@@ -811,7 +836,11 @@ the file is published no matter what."
             (message "Publishing %s ..." file))
         (muse-with-temp-buffer
           (muse-insert-file-contents file)
-          (muse-publish-markup-buffer (muse-page-name file) style)
+          (run-hooks 'muse-before-publish-hook)
+          (when muse-publish-enable-local-variables
+            (hack-local-variables))
+          (let ((muse-inhibit-before-publish-hook t))
+            (muse-publish-markup-buffer (muse-page-name file) style))
           (when (muse-write-file output-path)
             (muse-style-run-hooks :final style file output-path target)))
         t))))
@@ -822,6 +851,7 @@ the file is published no matter what."
 Prompt for both the STYLE and OUTPUT-DIR if they are not
 supplied."
   (interactive (muse-publish-get-info))
+  (setq style (muse-style style))
   (if buffer-file-name
       (let ((muse-current-output-style (list :base (car style)
                                              :path output-dir)))
@@ -833,6 +863,7 @@ supplied."
 (defun muse-batch-publish-files ()
   "Publish Muse files in batch mode."
   (let ((muse-batch-publishing-p t)
+        (font-lock-verbose nil)
         muse-current-output-style
         style output-dir)
     ;; don't activate VC when publishing files
@@ -938,7 +969,10 @@ This function returns the matching attribute value, if found."
 (defun muse-publish-markup-tag ()
   (let ((tag-info (muse-markup-tag-info (match-string 1))))
     (when (and tag-info
-               (not (get-text-property (match-beginning 0) 'read-only)))
+               (not (get-text-property (match-beginning 0) 'read-only))
+               (nth 4 tag-info)
+               (or muse-publish-enable-dangerous-tags
+                   (not (get (nth 4 tag-info) 'muse-dangerous-tag))))
       (let ((closed-tag (match-string 3))
             (start (match-beginning 0))
             (beg (point))
@@ -1183,7 +1217,7 @@ The following contexts exist in Muse.
 (defun muse-insert-markup-end-list (&rest args)
   (let ((beg (point)))
     (apply 'insert args)
-    (add-text-properties beg (point) '(end-list t))
+    (add-text-properties beg (point) '(muse-end-list t))
     (muse-publish-mark-read-only beg (point))))
 
 (defun muse-publish-determine-dl-indent (continue indent-sym determine-sym)
@@ -1550,15 +1584,15 @@ The existing region will be removed, except for initial blank lines."
         (narrow-to-region (match-beginning 0) (match-end 0))
         (goto-char (point-min))
         (forward-line 1)
-        (search-forward "|" nil t)
-        (with-temp-buffer
-          (let ((temp-buf (current-buffer)))
-            (with-current-buffer muse-buf
-              (table-generate-source variant temp-buf))
-            (with-current-buffer muse-buf
-              (delete-region (point-min) (point-max))
-              (insert-buffer-substring temp-buf)
-              (muse-publish-mark-read-only (point-min) (point-max)))))))))
+        (when (search-forward "|" nil t)
+          (with-temp-buffer
+            (let ((temp-buf (current-buffer)))
+              (with-current-buffer muse-buf
+                (table-generate-source variant temp-buf))
+              (with-current-buffer muse-buf
+                (delete-region (point-min) (point-max))
+                (insert-buffer-substring temp-buf)
+                (muse-publish-mark-read-only (point-min) (point-max))))))))))
 
 (defun muse-publish-markup-table-el ()
   "Mark up table.el-style tables."
@@ -1864,6 +1898,8 @@ is exactly this style."
       (when (and (bolp) (eolp) (not (eobp)))
         (delete-char 1)))))
 
+(put 'muse-publish-literal-tag 'muse-dangerous-tag t)
+
 (defun muse-publish-verbatim-tag (beg end)
   (muse-publish-escape-specials beg end nil 'verbatim)
   (muse-publish-mark-read-only beg end))
@@ -1874,6 +1910,7 @@ is exactly this style."
   (muse-insert-markup (muse-markup-text 'line-break)))
 
 (defalias 'muse-publish-class-tag 'ignore)
+(defalias 'muse-publish-div-tag 'ignore)
 
 (defun muse-publish-call-tag-on-buffer (tag &optional attrs)
   "Transform the current buffer as if it were surrounded by the tag TAG.
@@ -1979,6 +2016,8 @@ BEG is modified to be the start of the published markup."
           (set-text-properties 0 (length str) nil str)
           (insert str))))))
 
+(put 'muse-publish-lisp-tag 'muse-dangerous-tag t)
+
 (defun muse-publish-command-tag (beg end attrs)
   (muse-publish-markup-attribute beg end attrs nil
     (while (looking-at "\\s-*$")
@@ -1999,25 +2038,35 @@ BEG is modified to be the start of the published markup."
       (insert ?\n))
     (goto-char (point-min))))
 
+(put 'muse-publish-command-tag 'muse-dangerous-tag t)
+
 (defun muse-publish-perl-tag (beg end attrs)
   (muse-publish-command-tag beg end
                             (cons (cons "interp" (executable-find "perl"))
                                   attrs)))
+
+(put 'muse-publish-perl-tag 'muse-dangerous-tag t)
 
 (defun muse-publish-php-tag (beg end attrs)
   (muse-publish-command-tag beg end
                             (cons (cons "interp" (executable-find "php"))
                                   attrs)))
 
+(put 'muse-publish-php-tag 'muse-dangerous-tag t)
+
 (defun muse-publish-python-tag (beg end attrs)
   (muse-publish-command-tag beg end
                             (cons (cons "interp" (executable-find "python"))
                                   attrs)))
 
+(put 'muse-publish-python-tag 'muse-dangerous-tag t)
+
 (defun muse-publish-ruby-tag (beg end attrs)
   (muse-publish-command-tag beg end
                             (cons (cons "interp" (executable-find "ruby"))
                                   attrs)))
+
+(put 'muse-publish-ruby-tag 'muse-dangerous-tag t)
 
 (defun muse-publish-comment-tag (beg end)
   (if (null muse-publish-comments-p)
@@ -2045,6 +2094,8 @@ explanation of how it works."
       (error "No file attribute specified in <include> tag"))
     (muse-publish-markup-attribute beg end attrs t
       (muse-insert-file-contents filename))))
+
+(put 'muse-publish-include-tag 'muse-dangerous-tag t)
 
 (defun muse-publish-mark-up-tag (beg end attrs)
   "Run an Emacs Lisp function on the region delimted by this tag.
@@ -2075,7 +2126,7 @@ current style is exactly this style."
             (and (not exactp) (muse-style-derived-p style)))
         (let* ((function (cdr (assoc "function" attrs)))
                (muse-publish-use-header-footer-tags nil)
-               (markup-function (and function (intern function))))
+               (markup-function (and function (intern-soft function))))
           (if (and markup-function (functionp markup-function))
               (save-restriction
                 (narrow-to-region beg end)
@@ -2085,6 +2136,8 @@ current style is exactly this style."
               (muse-publish-markup-region beg end)))
           (muse-publish-mark-read-only beg (point)))
       (delete-region beg end))))
+
+(put 'muse-publish-mark-up-tag 'muse-dangerous-tag t)
 
 ;; Miscellaneous helper functions
 

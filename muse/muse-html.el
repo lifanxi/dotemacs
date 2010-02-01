@@ -1,6 +1,7 @@
 ;;; muse-html.el --- publish to HTML and XHTML
 
-;; Copyright (C) 2004, 2005, 2006, 2007, 2008  Free Software Foundation, Inc.
+;; Copyright (C) 2004, 2005, 2006, 2007, 2008, 2009, 2010
+;;   Free Software Foundation, Inc.
 
 ;; This file is part of Emacs Muse.  It is not part of GNU Emacs.
 
@@ -373,6 +374,7 @@ and `muse-html-markup-strings' are searched."
 
 (defcustom muse-html-markup-tags
   '(("class" t t   t muse-html-class-tag)
+    ("div"   t t   t muse-html-div-tag)
     ("src"   t t nil muse-html-src-tag))
  "A list of tag specifications, for specially marking up HTML."
   :type '(repeat (list (string :tag "Markup tag")
@@ -416,6 +418,17 @@ This will be used if no special characters are found."
   :type 'string
   :group 'muse-html)
 
+(defcustom muse-html-src-allowed-modes t
+  "Modes that we allow the <src> tag to colorize.
+If t, permit the <src> tag to colorize any mode.
+
+If a list of mode names, such as '(\"html\" \"latex\"), and the
+lang argument to <src> is not in the list, then use fundamental
+mode instead."
+  :type '(choice (const :tag "Any" t)
+                 (repeat (string :tag "Mode")))
+  :group 'muse-html)
+
 (defun muse-html-insert-anchor (anchor)
   "Insert an anchor, either around the word at point, or within a tag."
   (skip-chars-forward (concat muse-regexp-blank "\n"))
@@ -445,16 +458,22 @@ This will be used if no special characters are found."
     (goto-char (match-beginning 0))
     (when (save-excursion
             (save-match-data
-              (and (re-search-backward "<\\(/?\\)p[ >]" nil t)
+              (and (not (get-text-property (max (point-min) (1- (point)))
+                                           'muse-no-paragraph))
+                   (re-search-backward "<\\(/?\\)p[ >]" nil t)
                    (not (string-equal (match-string 1) "/")))))
-      (when (get-text-property (1- (point)) 'end-list)
-        (goto-char (previous-single-property-change (1- (point)) 'end-list)))
+      (when (get-text-property (1- (point)) 'muse-end-list)
+        (goto-char (previous-single-property-change (1- (point))
+                                                    'muse-end-list)))
       (muse-insert-markup "</p>"))
     (goto-char end))
   (cond
    ((eobp)
     (unless (bolp)
       (insert "\n")))
+   ((get-text-property (point) 'muse-no-paragraph)
+    (forward-char 1)
+    nil)
    ((eq (char-after) ?\<)
     (cond
      ((looking-at "<\\(em\\|strong\\|code\\|span\\)[ >]")
@@ -601,6 +620,19 @@ table of contents."
         (goto-char end)
         (muse-insert-markup "</span>")))))
 
+(defun muse-html-div-tag (beg end attrs)
+  "Publish a <div> tag for HTML."
+  (let ((id (cdr (assoc "id" attrs)))
+        (style (cdr (assoc "style" attrs))))
+    (when (or id style)
+      (goto-char beg)
+      (if (null id)
+          (muse-insert-markup "<div style=\"" style "\">")
+        (muse-insert-markup "<div id=\"" id "\">"))
+      (save-excursion
+        (goto-char end)
+        (muse-insert-markup "</div>")))))
+
 (defun muse-html-src-tag (beg end attrs)
   "Publish the region using htmlize.
 The language to use may be specified by the \"lang\" attribute.
@@ -623,9 +655,11 @@ This tag requires htmlize 1.34 or later in order to work."
       ;; if htmlize.el was not found, treat this like an example tag
       (muse-publish-example-tag beg end)
     (muse-publish-ensure-block beg end)
-    (let* ((mode (and (assoc "lang" attrs)
-                      (intern (concat (cdr (assoc "lang" attrs))
-                                      "-mode"))))
+    (let* ((lang (cdr (assoc "lang" attrs)))
+           (mode (or (and (not (eq muse-html-src-allowed-modes t))
+                          (not (member lang muse-html-src-allowed-modes))
+                          'fundamental-mode)
+                     (intern-soft (concat lang "-mode"))))
            (text (muse-delete-and-extract-region beg end))
            (htmltext
             (with-temp-buffer

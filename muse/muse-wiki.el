@@ -1,6 +1,7 @@
 ;;; muse-wiki.el --- wiki features for Muse
 
-;; Copyright (C) 2005, 2006, 2007, 2008  Free Software Foundation, Inc.
+;; Copyright (C) 2005, 2006, 2007, 2008, 2009, 2010
+;;   Free Software Foundation, Inc.
 
 ;; Author: Yann Hodique <Yann.Hodique@lifl.fr>
 ;; Keywords:
@@ -84,8 +85,7 @@ all the files in the project."
                       "\\)"))))
     ;; update coloring setup
     (when (featurep 'muse-colors)
-      (muse-configure-highlighting
-       'muse-colors-markup muse-colors-markup))))
+      (muse-colors-define-highlighting 'muse-mode muse-colors-markup))))
 
 (add-hook 'muse-update-values-hook
           'muse-wiki-update-project-file-regexp)
@@ -101,8 +101,7 @@ all the files in the project."
         (lambda (sym value)
           (set sym value)
           (when (featurep 'muse-colors)
-            (muse-configure-highlighting
-             'muse-colors-markup muse-colors-markup))))
+            (muse-colors-define-highlighting 'muse-mode muse-colors-markup))))
   :type 'regexp
   :group 'muse-wiki)
 
@@ -148,9 +147,9 @@ If you want this replacement to happen, you must add
   (setq project (muse-project project))
   (let ((flist nil))
     (save-match-data
-      (dolist (filename (muse-project-file-alist project))
-        (when (string-match " " filename)
-          (setq flist (cons filename flist)))))
+      (dolist (entry (muse-project-file-alist project))
+        (when (string-match " " (car entry))
+          (setq flist (cons (car entry) flist)))))
     flist))
 
 (defun muse-wiki-update-interwiki-regexp ()
@@ -158,28 +157,30 @@ If you want this replacement to happen, you must add
 `muse-wiki-interwiki-alist' and `muse-project-alist'."
   (if (null muse-project-alist)
       (setq muse-wiki-interwiki-regexp nil)
-    (setq muse-wiki-interwiki-regexp
-          (concat "\\<\\(" (regexp-opt (mapcar #'car muse-project-alist))
-                  (when muse-wiki-interwiki-alist
-                    (let ((interwiki-rules (mapcar #'car
-                                                   muse-wiki-interwiki-alist)))
-                      (when interwiki-rules
-                        (concat "\\|" (regexp-opt interwiki-rules)))))
-                  "\\)\\(?:\\(" muse-wiki-interwiki-delimiter
-                  "\\)\\("
-                  (when muse-wiki-match-all-project-files
-                    ;; append the files from the project
-                    (let ((files nil))
-                      (dolist (proj muse-project-alist)
-                        (setq files
-                              (nconc (muse-wiki-project-files-with-spaces
-                                      (car proj))
-                                     files)))
-                      (when files
-                        (concat (regexp-opt files) "\\|"))))
-                  "\\sw+\\)\\(#\\S-+\\)?\\)?\\>"))
-    (when (featurep 'muse-colors)
-      (muse-configure-highlighting 'muse-colors-markup muse-colors-markup))))
+    (let ((old-value muse-wiki-interwiki-regexp))
+      (setq muse-wiki-interwiki-regexp
+            (concat "\\<\\(" (regexp-opt (mapcar #'car muse-project-alist))
+                    (when muse-wiki-interwiki-alist
+                      (let ((interwiki-rules
+                             (mapcar #'car muse-wiki-interwiki-alist)))
+                        (when interwiki-rules
+                          (concat "\\|" (regexp-opt interwiki-rules)))))
+                    "\\)\\(?:\\(" muse-wiki-interwiki-delimiter
+                    "\\)\\("
+                    (when muse-wiki-match-all-project-files
+                      ;; append the files from the project
+                      (let ((files nil))
+                        (dolist (proj muse-project-alist)
+                          (setq files
+                                (nconc (muse-wiki-project-files-with-spaces
+                                        (car proj))
+                                       files)))
+                        (when files
+                          (concat (regexp-opt files) "\\|"))))
+                    "\\sw+\\)\\(#\\S-+\\)?\\)?\\>"))
+      (when (and (featurep 'muse-colors)
+                 (not (string= old-value muse-wiki-interwiki-regexp)))
+        (muse-colors-define-highlighting 'muse-mode muse-colors-markup)))))
 
 (defcustom muse-wiki-interwiki-alist
   '(("EmacsWiki" . "http://www.emacswiki.org/cgi-bin/wiki/"))
@@ -401,73 +402,72 @@ If EXPLICIT is non-nil, TITLE will be returned unmodified."
 
 ;;; Coloring setup
 
-(eval-after-load "muse-colors"
-  '(progn
-     (defun muse-wiki-colors-nop-tag (beg end)
-       "Inhibit the colorization of inhibit links just after the tag.
+(defun muse-wiki-colors-nop-tag (beg end)
+  "Inhibit the colorization of inhibit links just after the tag.
 
 Example: <nop>WikiWord"
-       (when muse-wiki-hide-nop-tag
-         (add-text-properties beg (+ beg 5)
-                              '(invisible muse intangible t)))
-       (unless (> (+ beg 6) (point-max))
-         (add-text-properties (+ beg 5) (+ beg 6)
-                              '(muse-no-implicit-link t))))
-     (defun muse-colors-wikiword-separate ()
-       (add-text-properties (match-beginning 0) (match-end 0)
-                            '(invisible muse intangible t)))
+  (when muse-wiki-hide-nop-tag
+    (add-text-properties beg (+ beg 5)
+                         '(invisible muse intangible t)))
+  (unless (> (+ beg 6) (point-max))
+    (add-text-properties (+ beg 5) (+ beg 6)
+                         '(muse-no-implicit-link t))))
 
-     (add-to-list 'muse-colors-tags
-                  '("nop" nil nil nil muse-wiki-colors-nop-tag)
-                  t)
+(defun muse-colors-wikiword-separate ()
+  (add-text-properties (match-beginning 0) (match-end 0)
+                       '(invisible muse intangible t)))
 
-     (add-to-list 'muse-colors-markup
-                  '(muse-wiki-interwiki-regexp t muse-colors-implicit-link)
-                  t)
-     (add-to-list 'muse-colors-markup
-                  '(muse-wiki-wikiword-regexp t muse-colors-implicit-link)
-                  t)
-     (add-to-list 'muse-colors-markup
-                  '(muse-wiki-project-file-regexp t muse-colors-implicit-link)
-                  t)
-     (add-to-list 'muse-colors-markup
-                  '("''''" ?\' muse-colors-wikiword-separate)
-                  nil)
+(defun muse-wiki-insinuate-colors ()
+  (add-to-list 'muse-colors-tags
+               '("nop" nil nil nil muse-wiki-colors-nop-tag)
+               t)
+  (add-to-list 'muse-colors-markup
+               '(muse-wiki-interwiki-regexp t muse-colors-implicit-link)
+               t)
+  (add-to-list 'muse-colors-markup
+               '(muse-wiki-wikiword-regexp t muse-colors-implicit-link)
+               t)
+  (add-to-list 'muse-colors-markup
+               '(muse-wiki-project-file-regexp t muse-colors-implicit-link)
+               t)
+  (add-to-list 'muse-colors-markup
+               '("''''" ?\' muse-colors-wikiword-separate)
+               nil)
+  (muse-colors-define-highlighting 'muse-mode muse-colors-markup))
 
-     (muse-configure-highlighting 'muse-colors-markup muse-colors-markup)))
+(eval-after-load "muse-colors" '(muse-wiki-insinuate-colors))
 
 ;;; Publishing setup
 
-(eval-after-load "muse-publish"
-  '(progn
-     (defun muse-wiki-publish-nop-tag (beg end)
-       "Inhibit the colorization of inhibit links just after the tag.
+(defun muse-wiki-publish-nop-tag (beg end)
+  "Inhibit the colorization of inhibit links just after the tag.
 
 Example: <nop>WikiWord"
-       (unless (= (point) (point-max))
-         (muse-publish-mark-read-only (point) (+ (point) 1))))
+  (unless (= (point) (point-max))
+    (muse-publish-mark-read-only (point) (+ (point) 1))))
 
-     (add-to-list 'muse-publish-markup-tags
-                  '("nop" nil nil nil muse-wiki-publish-nop-tag)
-                  t)
+(defun muse-wiki-insinuate-publish ()
+  (add-to-list 'muse-publish-markup-tags
+               '("nop" nil nil nil muse-wiki-publish-nop-tag)
+               t)
+  (add-to-list 'muse-publish-markup-regexps
+               '(3100 muse-wiki-interwiki-regexp 0 link)
+               t)
+  (add-to-list 'muse-publish-markup-regexps
+               '(3200 muse-wiki-wikiword-regexp 0 link)
+               t)
+  (add-to-list 'muse-publish-markup-regexps
+               '(3250 muse-wiki-project-file-regexp 0 link)
+               t)
+  (add-to-list 'muse-publish-markup-regexps
+               '(3300 "''''" 0 "")
+               t)
+  (custom-add-option 'muse-publish-desc-transforms
+                     'muse-wiki-publish-pretty-interwiki)
+  (custom-add-option 'muse-publish-desc-transforms
+                     'muse-wiki-publish-pretty-title))
 
-     (add-to-list 'muse-publish-markup-regexps
-                  '(3100 muse-wiki-interwiki-regexp 0 link)
-                  t)
-     (add-to-list 'muse-publish-markup-regexps
-                  '(3200 muse-wiki-wikiword-regexp 0 link)
-                  t)
-     (add-to-list 'muse-publish-markup-regexps
-                  '(3250 muse-wiki-project-file-regexp 0 link)
-                  t)
-     (add-to-list 'muse-publish-markup-regexps
-                  '(3300 "''''" 0 "")
-                  t)
-
-     (custom-add-option 'muse-publish-desc-transforms
-                        'muse-wiki-publish-pretty-interwiki)
-     (custom-add-option 'muse-publish-desc-transforms
-                        'muse-wiki-publish-pretty-title)))
+(eval-after-load "muse-publish" '(muse-wiki-insinuate-publish))
 
 ;;; Insinuate link handling
 

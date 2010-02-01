@@ -1,6 +1,7 @@
 ;;; muse-xml.el --- publish XML files
 
-;; Copyright (C) 2005, 2006, 2007, 2008  Free Software Foundation, Inc.
+;; Copyright (C) 2005, 2006, 2007, 2008, 2009, 2010
+;;   Free Software Foundation, Inc.
 
 ;; Author: Michael Olson <mwolson@gnu.org>
 ;; Date: Sat 23-Jul-2005
@@ -226,16 +227,22 @@ found in `muse-xml-encoding-map'."
     (goto-char (match-beginning 0))
     (when (save-excursion
             (save-match-data
-              (and (re-search-backward "<\\(/?\\)p[ >]" nil t)
+              (and (not (get-text-property (max (point-min) (1- (point)))
+                                           'muse-no-paragraph))
+                   (re-search-backward "<\\(/?\\)p[ >]" nil t)
                    (not (string-equal (match-string 1) "/")))))
-      (when (get-text-property (1- (point)) 'end-list)
-        (goto-char (previous-single-property-change (1- (point)) 'end-list)))
+      (when (get-text-property (1- (point)) 'muse-end-list)
+        (goto-char (previous-single-property-change (1- (point))
+                                                    'muse-end-list)))
       (muse-insert-markup "</p>"))
     (goto-char end))
   (cond
    ((eobp)
     (unless (bolp)
       (insert "\n")))
+   ((get-text-property (point) 'muse-no-paragraph)
+    (forward-char 1)
+    nil)
    ((eq (char-after) ?\<)
     (when (looking-at (concat "<\\(format\\|code\\|link\\|image"
                               "\\|anchor\\|footnote\\)[ >]"))
