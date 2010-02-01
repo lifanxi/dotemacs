@@ -1,6 +1,7 @@
 ;;; muse-regexps.el --- define regexps used by Muse
 
-;; Copyright (C) 2004, 2005, 2006, 2007, 2008  Free Software Foundation, Inc.
+;; Copyright (C) 2004, 2005, 2006, 2007, 2008, 2009, 2010
+;;   Free Software Foundation, Inc.
 
 ;; This file is part of Emacs Muse.  It is not part of GNU Emacs.
 
@@ -198,6 +199,13 @@ The first match string must contain the term."
                                                "\\+\\(-*\\+\\)+"
                                                "[" muse-regexp-blank "]*")
   "Regexp used to match the beginning and end of a table.el-style table."
+  :type 'regexp
+  :group 'muse-regexp)
+
+(defcustom muse-table-el-line-regexp (concat "[" muse-regexp-blank "]*"
+                                             "|\\(.*|\\)*"
+                                           "[" muse-regexp-blank "]*")
+  "Regexp used to match a table line of a table.el-style table."
   :type 'regexp
   :group 'muse-regexp)
 

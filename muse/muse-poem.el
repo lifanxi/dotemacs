@@ -1,6 +1,7 @@
 ;;; muse-poem.el --- publish a poem to LaTex or PDF
 
-;; Copyright (C) 2004, 2005, 2006, 2007, 2008  Free Software Foundation, Inc.
+;; Copyright (C) 2004, 2005, 2006, 2007, 2008, 2009, 2010
+;;   Free Software Foundation, Inc.
 
 ;; This file is part of Emacs Muse.  It is not part of GNU Emacs.
 
@@ -226,6 +227,8 @@ The form of usage is:
         (insert "> ")
         (forward-line 1))
       (set-marker end nil))))
+
+(put 'muse-poem-markup-tag 'muse-dangerous-tag t)
 
 (add-to-list 'muse-publish-markup-tags muse-poem-tag)
 

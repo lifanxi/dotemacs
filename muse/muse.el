@@ -1,11 +1,12 @@
 ;;; muse.el --- an authoring and publishing tool for Emacs
 
-;; Copyright (C) 2004, 2005, 2006, 2007, 2008  Free Software Foundation, Inc.
+;; Copyright (C) 2004, 2005, 2006, 2007, 2008, 2009, 2010
+;;   Free Software Foundation, Inc.
 
 ;; Emacs Lisp Archive Entry
 ;; Filename: muse.el
-;; Version: 3.12
-;; Date: Fri 28-Jan-2008
+;; Version: 3.20
+;; Date: Sun 31 Jan-2010
 ;; Keywords: hypermedia
 ;; Author: John Wiegley <johnw@gnu.org>
 ;; Maintainer: Michael Olson <mwolson@gnu.org>
@@ -48,7 +49,7 @@
 ;; Indicate that this version of Muse supports nested tags
 (provide 'muse-nested-tags)
 
-(defvar muse-version "3.12"
+(defvar muse-version "3.20"
   "The version of Muse currently loaded")
 
 (defun muse-version (&optional insert)
@@ -316,8 +317,9 @@ debugging purposes rather than removing it."
 
 (defun muse-insert-file-contents (filename &optional visit)
   "Insert the contents of file FILENAME after point.
-Do character code conversion, but none of the other unnecessary
-things like format decoding or `find-file-hook'.
+Do character code conversion and end-of-line conversion, but none
+of the other unnecessary things like format decoding or
+`find-file-hook'.
 
 If VISIT is non-nil, the buffer's visited filename
 and last save file modtime are set, and it is marked unmodified.
@@ -325,29 +327,23 @@ If visiting and the file does not exist, visiting is completed
 before the error is signaled."
   (let ((format-alist nil)
         (after-insert-file-functions nil)
-        (find-buffer-file-type-function
-         (if (fboundp 'find-buffer-file-type)
-             (symbol-function 'find-buffer-file-type)
-           nil))
         (inhibit-file-name-handlers
-         (append '(jka-compr-handler image-file-handler)
+         (append '(jka-compr-handler image-file-handler epa-file-handler)
                  inhibit-file-name-handlers))
         (inhibit-file-name-operation 'insert-file-contents))
-    (unwind-protect
-         (progn
-           (fset 'find-buffer-file-type (lambda (filename) t))
-           (insert-file-contents filename visit))
-      (if find-buffer-file-type-function
-          (fset 'find-buffer-file-type find-buffer-file-type-function)
-        (fmakunbound 'find-buffer-file-type)))))
+    (insert-file-contents filename visit)))
 
-(defun muse-write-file (filename)
+(defun muse-write-file (filename &optional nomessage)
   "Write current buffer into file FILENAME.
 Unlike `write-file', this does not visit the file, try to back it
 up, or interact with vc.el in any way.
 
 If the file was not written successfully, return nil.  Otherwise,
-return non-nil."
+return non-nil.
+
+If the NOMESSAGE argument is non-nil, suppress the \"Wrote file\"
+message."
+  (when nomessage (setq nomessage 'nomessage))
   (let ((backup-inhibited t)
         (buffer-file-name filename)
         (buffer-file-truename (file-truename filename)))
@@ -370,7 +366,8 @@ return non-nil."
                  (or (and (boundp 'save-buffer-coding-system)
                           save-buffer-coding-system)
                      coding-system-for-write)))
-            (write-region (point-min) (point-max) buffer-file-name))
+            (write-region (point-min) (point-max) buffer-file-name
+                          nil nomessage))
           (when (boundp 'last-file-coding-system-used)
             (when (boundp 'buffer-file-coding-system-explicit)
               (setq buffer-file-coding-system-explicit
@@ -594,6 +591,19 @@ on the system \"/user@host:\"."
     (prog1 (buffer-substring start end)
       (delete-region start end))))
 
+(if (fboundp 'delete-dups)
+    (defalias 'muse-delete-dups 'delete-dups)
+  (defun muse-delete-dups (list)
+    "Destructively remove `equal' duplicates from LIST.
+Store the result in LIST and return it.  LIST must be a proper list.
+Of several `equal' occurrences of an element in LIST, the first
+one is kept."
+    (let ((tail list))
+      (while tail
+        (setcdr tail (delete (car tail) (cdr tail)))
+        (setq tail (cdr tail))))
+    list))
+
 ;; Set face globally in a predictable fashion
 (defun muse-copy-face (old new)
   "Copy face OLD to NEW."
@@ -762,12 +772,12 @@ the contents of `muse-list-item-regexp'."
 
 (defun muse-forward-paragraph (&optional pattern)
   "Move forward safely by one paragraph, or according to PATTERN."
-  (when (get-text-property (point) 'end-list)
-    (goto-char (next-single-property-change (point) 'end-list)))
+  (when (get-text-property (point) 'muse-end-list)
+    (goto-char (next-single-property-change (point) 'muse-end-list)))
   (setq pattern (if pattern
                     (concat "^\\(?:" pattern "\\|\n\\|\\'\\)")
                   "^\\s-*\\(\n\\|\\'\\)"))
-  (let ((next-list-end (or (next-single-property-change (point) 'end-list)
+  (let ((next-list-end (or (next-single-property-change (point) 'muse-end-list)
                            (point-max))))
     (forward-line 1)
     (if (re-search-forward pattern nil t)
@@ -814,7 +824,7 @@ provide a very liberal INDENT value, such as
     (while (progn
              (muse-forward-paragraph list-pattern)
              ;; make sure we don't go past boundary
-             (and (not (or (get-text-property (point) 'end-list)
+             (and (not (or (get-text-property (point) 'muse-end-list)
                            (>= (point) (point-max))))
                   ;; move past markup that is part of another construct
                   (or (and (match-beginning 1)
@@ -828,7 +838,7 @@ provide a very liberal INDENT value, such as
                       (and (not no-skip-nested)
                            (muse-forward-list-item-1 type empty-line
                                                      indented-line))))))
-    (cond ((or (get-text-property (point) 'end-list)
+    (cond ((or (get-text-property (point) 'muse-end-list)
                (>= (point) (point-max)))
            ;; at a list boundary, so stop
            nil)

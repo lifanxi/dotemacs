@@ -1,14 +1,14 @@
-This is muse.info, produced by makeinfo version 4.13 from muse.texi.
+This is muse.info, produced by makeinfo version 4.11 from muse.texi.
 
 INFO-DIR-SECTION Emacs
 START-INFO-DIR-ENTRY
 * Muse: (muse). Authoring and publishing environment for Emacs.
 END-INFO-DIR-ENTRY
 
-   This manual is for Emacs Muse version 3.12.
+   This manual is for Emacs Muse version 3.20.
 
-   Copyright (C) 2004, 2005, 2006, 2007, 2008  Free Software
-Foundation, Inc.
+   Copyright (C) 2004, 2005, 2006, 2007, 2008, 2009, 2010  Free
+Software Foundation, Inc.
 
      Permission is granted to copy, distribute and/or modify this
      document under the terms of the GNU Free Documentation License,
@@ -37,10 +37,10 @@ File: muse.info,  Node: Top,  Next: Preface,  Prev: (dir),  Up: (dir)
 Muse
 ****
 
-This manual is for Emacs Muse version 3.12.
+This manual is for Emacs Muse version 3.20.
 
-   Copyright (C) 2004, 2005, 2006, 2007, 2008  Free Software
-Foundation, Inc.
+   Copyright (C) 2004, 2005, 2006, 2007, 2008, 2009, 2010  Free
+Software Foundation, Inc.
 
      Permission is granted to copy, distribute and/or modify this
      document under the terms of the GNU Free Documentation License,
@@ -134,6 +134,7 @@ Publishing Various Types of Documents
 * ConTeXt::                     Publishing ConTeXt documents.
 * DocBook::                     Publishing in DocBook XML form.
 * HTML::                        Publishing in HTML or XHTML form.
+* Ikiwiki::                     Integrating with ikiwiki.
 * Journal::                     Keeping a journal or blog.
 * LaTeX::                       Publishing LaTeX documents.
 * Poem::                        Publish a poem to LaTeX or PDF.
@@ -148,17 +149,13 @@ Integrating Muse and pyblosxom.cgi
 
 Making your own publishing styles
 
-* Common Elements::             Common functionality shared by styles.
-* Deriving Styles::             Deriving a new style from an existing
-                                  one.
-
-Common functionality shared by styles
-
 * Markup Functions::            Specifying functions to mark up text.
 * Markup Regexps::              Markup rules for publishing.
 * Markup Strings::              Strings specific to a publishing style.
 * Markup Tags::                 Tag specifications for special markup.
 * Style Elements::              Parameters used for defining styles.
+* Deriving Styles::             Deriving a new style from an existing
+                                  one.
 
 Miscellaneous add-ons, like a minor mode
 
@@ -483,7 +480,7 @@ File: muse.info,  Node: Using Muse Mode,  Next: Publishing Files Overview,  Prev
 Muse Mode should automatically be activated when you visit a file with a
 ".muse" extension.  One such file is `QuickStart.muse', which is
 available in the `examples' directory of the Muse distribution.  You
-can tell that Muse Mose has been activated by checking for the text
+can tell that Muse Mode has been activated by checking for the text
 "Muse" in your mode line.  If Muse Mode has not been activated, you may
 activate it by type `M-x muse-mode RET'.
 
@@ -1418,11 +1415,10 @@ File: muse.info,  Node: Embedded Lisp,  Next: Citations,  Prev: Horizontal Rules
 8.13 Evaluating Emacs Lisp code in documents for extensibility
 ==============================================================
 
-Arbitrary kinds of markup can be achieved using the <lisp> tag, which
-is the only Muse tag supported in a style's header and footer text.
-With the <lisp> tag, you may generated whatever output text you wish.
-The inserted output will get marked up, if the <lisp> tag appears
-within the main text of the document.
+Arbitrary kinds of markup can be achieved using the <lisp> tag.  With
+the <lisp> tag, you may generate whatever output text you wish.  The
+inserted output will get marked up if the <lisp> tag appears within the
+main text of the document.
 
      <lisp>(concat "This form gets " "inserted")</lisp>
 
@@ -1538,6 +1534,10 @@ Muse has several built-in tags that may prove useful during publishing.
 *Note muse-publish-markup-tags::, to see how to customize the tags that
 Muse uses, as well as make your own tags.
 
+   Only a small subset of these tags are available in header and footer
+text.  The `muse-publish-markup-header-footer-tags' option lists the
+tags that are allowed in headers and footers.
+
 Syntax
 ------
 
@@ -1638,6 +1638,13 @@ that were mentioned in previous sections.
      generated Table of Contents.  To change this globally, customize
      the MUSE-PUBLISH-CONTENTS-DEPTH option.  To change this only for
      the current tag, use the "depth" argument.
+
+`<div>'
+     Insert a <div> tag into HTML documents, and do not insert anything
+     special for other non-HTML publishing formats.
+
+     If the "style" argument is provided, include it with the published
+     <div> tag.  Likewise for the "id" argument.
 
 `<example>'
      Publish the region in monospace, preserving the newlines in the
@@ -1768,6 +1775,7 @@ easy to create new styles, or derive from an existing style.
 * ConTeXt::                     Publishing ConTeXt documents.
 * DocBook::                     Publishing in DocBook XML form.
 * HTML::                        Publishing in HTML or XHTML form.
+* Ikiwiki::                     Integrating with ikiwiki.
 * Journal::                     Keeping a journal or blog.
 * LaTeX::                       Publishing LaTeX documents.
 * Poem::                        Publish a poem to LaTeX or PDF.
@@ -2238,7 +2246,7 @@ characters as the "xml" publishing style.  *Note XML::, for details.
 
 
 
-File: muse.info,  Node: HTML,  Next: Journal,  Prev: DocBook,  Up: Publishing Styles
+File: muse.info,  Node: HTML,  Next: Ikiwiki,  Prev: DocBook,  Up: Publishing Styles
 
 9.5 Publishing in HTML or XHTML form
 ====================================
@@ -2370,9 +2378,82 @@ characters as the "xml" publishing style.  *Note XML::, for details.
 
 
 
-File: muse.info,  Node: Journal,  Next: LaTeX,  Prev: HTML,  Up: Publishing Styles
+File: muse.info,  Node: Ikiwiki,  Next: Journal,  Prev: HTML,  Up: Publishing Styles
 
-9.6 Keeping a journal or blog
+9.6 Integrating with ikiwiki
+============================
+
+Note: Support for Ikiwiki is not yet complete.  Use at your own risk.
+
+   Ikiwiki is a wiki compiler (`http://ikiwiki.info/').  Emacs Muse can
+(not yet) be used as a source format for Ikiwiki pages with the plugin
+`IkiWiki::Plugin::muse'.
+
+   The `lisp/muse-ikiwiki.el' file provides publishing functions and
+styles for Ikiwiki.  The plugin for Ikiwiki to recognize Muse files is
+provided by the `contrib/ikiwiki/IkiWiki/Plugin/muse.pm' file.  Two
+sample init files are available in the `examples/ikiwiki' directory.
+Configure your `ikiwiki.setup' file so that the `muse_init' variable
+has the location of your Muse init file.
+
+   If you are using CGI, The directory `contrib/ikiwiki/IkiWiki' must
+be copied to the same directory as the CGI script that Ikiwiki
+generates.  When publishing your wiki, the PERL5LIB environment
+variable must contain the path to the `contrib/ikiwiki/IkiWiki'
+directory.
+
+Styles provided
+---------------
+
+`ikiwiki'
+     Supports publishing XHTML output that Ikiwiki can understand.
+
+
+Options provided
+----------------
+
+`muse-ikiwiki-header'
+     Header used for publishing Ikiwiki output files.
+
+     This may be text or a filename.
+
+`muse-ikiwiki-footer'
+     Footer used for publishing Ikiwiki output files.
+
+     This may be text or a filename.
+
+
+Other relevant options
+----------------------
+
+`muse-colors-evaluate-lisp-tags'
+     Specify whether to evaluate the contents of <lisp> tags at display
+     time.  If nil, don't evaluate them.  If non-nil, evaluate them.
+
+     The actual contents of the buffer are not changed, only the
+     displayed text.
+
+`muse-html-src-allowed-modes'
+     Modes that we allow the <src> tag to colorize.  If `t', permit the
+     <src> tag to colorize any mode.
+
+     If a list of mode names, such as `'("html" "latex")', and the lang
+     argument to <src> is not in the list, then use fundamental mode
+     instead.
+
+`muse-publish-enable-dangerous-tags'
+     If non-nil, publish tags like <lisp> and <command> that can call
+     external programs or expose sensitive information.  Otherwise,
+     ignore tags like this.
+
+     This is useful to set to `nil' when the file to publish is coming
+     from an untrusted source.
+
+
+
+File: muse.info,  Node: Journal,  Next: LaTeX,  Prev: Ikiwiki,  Up: Publishing Styles
+
+9.7 Keeping a journal or blog
 =============================
 
 The module facilitates the keeping and publication of a journal.  When
@@ -2596,7 +2677,7 @@ Options provided
 
 File: muse.info,  Node: LaTeX,  Next: Poem,  Prev: Journal,  Up: Publishing Styles
 
-9.7 Publishing LaTeX documents
+9.8 Publishing LaTeX documents
 ==============================
 
 This publishing style is capable of producing LaTeX or PDF documents.
@@ -2667,6 +2748,11 @@ Options provided
 
 `muse-latex-pdf-extension'
      Default file extension for publishing LaTeX files to PDF.
+
+`muse-latex-pdf-browser'
+     The program to use when browsing a published PDF file.
+
+     This should be a format string.
 
 `muse-latex-pdf-program'
      The program that is called to generate PDF content from LaTeX
@@ -2782,7 +2868,7 @@ Options provided
 
 File: muse.info,  Node: Poem,  Next: Texinfo,  Prev: LaTeX,  Up: Publishing Styles
 
-9.8 Publish a poem to LaTeX or PDF
+9.9 Publish a poem to LaTeX or PDF
 ==================================
 
 The `muse-poem' module makes it easy to attractively publish and
@@ -2870,8 +2956,8 @@ Options provided
 
 File: muse.info,  Node: Texinfo,  Next: XML,  Prev: Poem,  Up: Publishing Styles
 
-9.9 Publish entries to Texinfo format or PDF
-============================================
+9.10 Publish entries to Texinfo format or PDF
+=============================================
 
 Rules for publishing a Muse file as a Texinfo article.
 
@@ -2942,7 +3028,7 @@ Options provided
 
 File: muse.info,  Node: XML,  Prev: Texinfo,  Up: Publishing Styles
 
-9.10 Publish entries to XML
+9.11 Publish entries to XML
 ===========================
 
 Muse is capable of publishing XML documents, with the help of the
@@ -3024,29 +3110,19 @@ File: muse.info,  Node: Extending Muse,  Next: Miscellaneous,  Prev: Publishing 
 
 * Menu:
 
-* Common Elements::             Common functionality shared by styles.
-* Deriving Styles::             Deriving a new style from an existing
-                                  one.
-
-
-File: muse.info,  Node: Common Elements,  Next: Deriving Styles,  Up: Extending Muse
-
-10.1 Common functionality shared by styles
-==========================================
-
-* Menu:
-
 * Markup Functions::            Specifying functions to mark up text.
 * Markup Regexps::              Markup rules for publishing.
 * Markup Strings::              Strings specific to a publishing style.
 * Markup Tags::                 Tag specifications for special markup.
 * Style Elements::              Parameters used for defining styles.
+* Deriving Styles::             Deriving a new style from an existing
+                                  one.
 
 
-File: muse.info,  Node: Markup Functions,  Next: Markup Regexps,  Up: Common Elements
+File: muse.info,  Node: Markup Functions,  Next: Markup Regexps,  Up: Extending Muse
 
-10.1.1 Specifying functions to mark up text
--------------------------------------------
+10.1 Specifying functions to mark up text
+=========================================
 
 `muse-publish-markup-functions'
 
@@ -3068,10 +3144,10 @@ rules for the most common types of markup.
      current style.
 
 
-File: muse.info,  Node: Markup Regexps,  Next: Markup Strings,  Prev: Markup Functions,  Up: Common Elements
+File: muse.info,  Node: Markup Regexps,  Next: Markup Strings,  Prev: Markup Functions,  Up: Extending Muse
 
-10.1.2 Markup rules for publishing
-----------------------------------
+10.2 Markup rules for publishing
+================================
 
 `muse-publish-markup-regexps'
 
@@ -3223,10 +3299,10 @@ This may be changed by customizing `muse-publish-markup-regexps'.
 
 
 
-File: muse.info,  Node: Markup Strings,  Next: Markup Tags,  Prev: Markup Regexps,  Up: Common Elements
+File: muse.info,  Node: Markup Strings,  Next: Markup Tags,  Prev: Markup Regexps,  Up: Extending Muse
 
-10.1.3 Strings specific to a publishing style
----------------------------------------------
+10.3 Strings specific to a publishing style
+===========================================
 
 "Markup strings" are strings used for marking up text for a particular
 style.
@@ -3545,10 +3621,10 @@ Available markup strings
 
 
 
-File: muse.info,  Node: Markup Tags,  Next: Style Elements,  Prev: Markup Strings,  Up: Common Elements
+File: muse.info,  Node: Markup Tags,  Next: Style Elements,  Prev: Markup Strings,  Up: Extending Muse
 
-10.1.4 Tag specifications for special markup
---------------------------------------------
+10.4 Tag specifications for special markup
+==========================================
 
 `muse-publish-markup-tags'
 
@@ -3577,15 +3653,16 @@ once at the end, to catch any tags which may have been inserted
 in-between.
 
 
-File: muse.info,  Node: Style Elements,  Prev: Markup Tags,  Up: Common Elements
+File: muse.info,  Node: Style Elements,  Next: Deriving Styles,  Prev: Markup Tags,  Up: Extending Muse
 
-10.1.5 Parameters used for defining styles
-------------------------------------------
+10.5 Parameters used for defining styles
+========================================
 
-Style elements are tags that define a style.  Use `muse-define-style'
-to create a new style.
+Style elements are tags that define a style.  Use either
+`muse-define-style' or `muse-derive-style' (*note Deriving Styles::) to
+create a new style.
 
-     (muse-define-style DERIVED-NAME BASE-NAME STYLE-PARAMETERS)
+ -- Function: muse-define-style name &rest elements
 
 Usable elements
 ---------------
@@ -3654,6 +3731,12 @@ Usable elements
      This is used for generating second-stage documents like PDF files
      from just-published LaTeX files.
 
+     The function must accept three arguments: the name of the muse
+     source file, the name of the just-published file, and the name of
+     the second-stage target file.  The name of the second-stage target
+     file is the same as that of the just-published file if no
+     second-stage publishing is required.
+
 `:header'
      Header used for publishing files of this style.
 
@@ -3678,16 +3761,16 @@ Usable elements
 
 
 
-File: muse.info,  Node: Deriving Styles,  Prev: Common Elements,  Up: Extending Muse
+File: muse.info,  Node: Deriving Styles,  Prev: Style Elements,  Up: Extending Muse
 
-10.2 Deriving a new style from an existing one
+10.6 Deriving a new style from an existing one
 ==============================================
 
 To create a new style from an existing one, use `muse-derive-style' as
 follows.  This is a good way to fix something you don't like about a
 particular publishing style, or to personalize it.
 
-     (muse-derive-style DERIVED-NAME BASE-NAME STYLE-PARAMETERS)
+ -- Function: muse-derive-style new-name base-name &rest elements
 
    The derived name is a string defining the new style, such as
 "my-html".  The base name must identify an existing style, such as
@@ -4396,7 +4479,7 @@ Index
 * links, with images:                    Images.               (line  6)
 * links, with target on same page:       Horizontal Rules and Anchors.
                                                                (line 13)
-* lisp, and insert command:              Embedded Lisp.        (line 14)
+* lisp, and insert command:              Embedded Lisp.        (line 13)
 * lisp, embedded:                        Embedded Lisp.        (line  6)
 * lists:                                 Lists.                (line  6)
 * lists, breaking lines:                 Lists.                (line 52)
@@ -4408,6 +4491,8 @@ Index
 * markup:                                Markup Rules.         (line  6)
 * monospace, rendering blocks:           Paragraphs.           (line 21)
 * monospace, rendering words:            Emphasizing Text.     (line  6)
+* muse-define-style:                     Style Elements.       (line 11)
+* muse-derive-style:                     Deriving Styles.      (line 11)
 * muse-list-edit-minor-mode:             Muse List Edit Minor Mode.
                                                                (line  6)
 * muse-project-alist, reference:         Options for Projects. (line  6)
@@ -4429,7 +4514,6 @@ Index
 * publishing styles, book-pdf:           Book.                 (line 60)
 * publishing styles, chapbook-latex:     Poem.                 (line 45)
 * publishing styles, chapbook-pdf:       Poem.                 (line 48)
-* publishing styles, common:             Common Elements.      (line  6)
 * publishing styles, context:            ConTeXt.              (line 15)
 * publishing styles, context-pdf:        ConTeXt.              (line 18)
 * publishing styles, context-slides:     ConTeXt.              (line 22)
@@ -4437,6 +4521,7 @@ Index
 * publishing styles, deriving:           Deriving Styles.      (line  6)
 * publishing styles, docbook:            DocBook.              (line 11)
 * publishing styles, html:               HTML.                 (line 11)
+* publishing styles, ikiwiki:            Ikiwiki.              (line 28)
 * publishing styles, info-pdf:           Texinfo.              (line 17)
 * publishing styles, journal-book-latex: Journal.              (line 82)
 * publishing styles, journal-book-pdf:   Journal.              (line 85)
@@ -4500,72 +4585,72 @@ Index
 
 
 Tag Table:
-Node: Top1415
-Node: Preface7427
-Node: Introduction7900
-Node: Obtaining Muse9349
-Node: Releases9686
-Node: Development11075
-Node: Installation14934
-Node: Getting Started17593
-Node: Loading Muse17975
-Node: Using Muse Mode18922
-Node: Publishing Files Overview20955
-Node: File Extensions22199
-Node: Projects23419
-Node: Single Project24041
-Node: Multiple Projects24991
-Node: Projects and Subdirectories26394
-Node: Options for Projects28077
-Node: Keystroke Summary32901
-Node: Markup Rules35020
-Node: Paragraphs36739
-Node: Headings38740
-Node: Directives39363
-Node: Emphasizing Text40683
-Node: Footnotes41460
-Node: Verse42097
-Node: Lists42841
-Node: Tables44390
-Node: Explicit Links46124
-Node: Implicit Links46839
-Node: Images49182
-Node: Horizontal Rules and Anchors51672
-Node: Embedded Lisp52320
-Node: Citations53490
-Node: Comments55974
-Node: Tag Summary56633
-Node: Publishing Styles64433
-Node: Blosxom65474
-Node: Blosxom Requirements66081
-Node: Blosxom Entries69616
-Node: Blosxom Options71179
-Node: Book72107
-Node: ConTeXt75166
-Node: DocBook79293
-Node: HTML80770
-Node: Journal84765
-Node: LaTeX91289
-Node: Poem96709
-Node: Texinfo98918
-Node: XML100833
-Node: Extending Muse102864
-Node: Common Elements103229
-Node: Markup Functions103757
-Ref: muse-publish-markup-functions103935
-Node: Markup Regexps104589
-Ref: muse-publish-markup-regexps104772
-Node: Markup Strings107779
-Node: Markup Tags114244
-Ref: muse-publish-markup-tags114442
-Node: Style Elements115561
-Node: Deriving Styles118589
-Node: Miscellaneous119888
-Node: Muse List Edit Minor Mode120173
-Node: Getting Help and Reporting Bugs122652
-Node: History125954
-Node: Contributors126737
-Node: GNU Free Documentation License127245
-Node: Concept Index149474
+Node: Top1427
+Node: Preface7398
+Node: Introduction7871
+Node: Obtaining Muse9320
+Node: Releases9657
+Node: Development11046
+Node: Installation14905
+Node: Getting Started17564
+Node: Loading Muse17946
+Node: Using Muse Mode18893
+Node: Publishing Files Overview20926
+Node: File Extensions22170
+Node: Projects23390
+Node: Single Project24012
+Node: Multiple Projects24962
+Node: Projects and Subdirectories26365
+Node: Options for Projects28048
+Node: Keystroke Summary32872
+Node: Markup Rules34991
+Node: Paragraphs36710
+Node: Headings38711
+Node: Directives39334
+Node: Emphasizing Text40654
+Node: Footnotes41431
+Node: Verse42068
+Node: Lists42812
+Node: Tables44361
+Node: Explicit Links46095
+Node: Implicit Links46810
+Node: Images49153
+Node: Horizontal Rules and Anchors51643
+Node: Embedded Lisp52291
+Node: Citations53387
+Node: Comments55871
+Node: Tag Summary56530
+Node: Publishing Styles64773
+Node: Blosxom65872
+Node: Blosxom Requirements66479
+Node: Blosxom Entries70014
+Node: Blosxom Options71577
+Node: Book72505
+Node: ConTeXt75564
+Node: DocBook79691
+Node: HTML81168
+Node: Ikiwiki85163
+Node: Journal87502
+Node: LaTeX94029
+Node: Poem99573
+Node: Texinfo101782
+Node: XML103699
+Node: Extending Muse105730
+Node: Markup Functions106367
+Ref: muse-publish-markup-functions106540
+Node: Markup Regexps107194
+Ref: muse-publish-markup-regexps107372
+Node: Markup Strings110379
+Node: Markup Tags116839
+Ref: muse-publish-markup-tags117032
+Node: Style Elements118151
+Node: Deriving Styles121558
+Node: Miscellaneous122857
+Node: Muse List Edit Minor Mode123142
+Node: Getting Help and Reporting Bugs125621
+Node: History128923
+Node: Contributors129706
+Node: GNU Free Documentation License130214
+Node: Concept Index152443
 
 End Tag Table

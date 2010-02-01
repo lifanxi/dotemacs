@@ -1,6 +1,7 @@
 ;;; muse-latex.el --- publish entries in LaTex or PDF format
 
-;; Copyright (C) 2004, 2005, 2006, 2007, 2008  Free Software Foundation, Inc.
+;; Copyright (C) 2004, 2005, 2006, 2007, 2008, 2009, 2010
+;;   Free Software Foundation, Inc.
 
 ;; This file is part of Emacs Muse.  It is not part of GNU Emacs.
 
@@ -64,12 +65,19 @@
   :type 'string
   :group 'muse-latex)
 
+(defcustom muse-latex-pdf-browser "open %s"
+  "The program to use when browsing a published PDF file.
+This should be a format string."
+  :type 'string
+  :group 'muse-latex)
+
 (defcustom muse-latex-pdf-program "pdflatex"
   "The program that is called to generate PDF content from LaTeX content."
   :type 'string
   :group 'muse-latex)
 
-(defcustom muse-latex-pdf-cruft '(".aux" ".toc" ".out" ".log")
+(defcustom muse-latex-pdf-cruft
+  '(".aux" ".log" ".nav" ".out" ".snm" ".toc" ".vrb")
   "Extensions of files to remove after generating PDF output successfully."
   :type 'string
   :group 'muse-latex)
@@ -157,17 +165,25 @@ filename."
 \\usepackage[T1]{fontenc}
 \\usepackage{hyperref}
 
-\\begin{document}
+\\def\\museincludegraphics{%
+  \\begingroup
+  \\catcode`\\|=0
+  \\catcode`\\\\=12
+  \\catcode`\\#=12
+  \\includegraphics[width=0.50\\textwidth]
+}
 
 \\title{<lisp>(muse-publish-escape-specials-in-string
   (muse-publishing-directive \"title\") 'document)</lisp>}
 \\author{<lisp>(muse-publishing-directive \"author\")</lisp>}
 \\date{<lisp>(muse-publishing-directive \"date\")</lisp>}
 
-\\maketitle
+\\begin{document}
+
+\\frame{\\titlepage}
 
 <lisp>(and muse-publish-generate-contents
-           \"\\\\tableofcontents\n\\\\newpage\")</lisp>\n\n"
+           \"\\\\frame{\\\\tableofcontents}\")</lisp>\n\n"
   "Header for publishing of slides using LaTeX.
 This may be text or a filename.
 
@@ -184,18 +200,27 @@ You must have the Beamer extension for LaTeX installed for this to work."
 \\usepackage[utf8x]{inputenc}
 \\usepackage[T1]{fontenc}
 \\usepackage{hyperref}
+\\usepackage[pdftex]{graphicx}
 
-\\begin{document}
+\\def\\museincludegraphics{%
+  \\begingroup
+  \\catcode`\\|=0
+  \\catcode`\\\\=12
+  \\catcode`\\#=12
+  \\includegraphics[width=0.50\\textwidth]
+}
 
 \\title{<lisp>(muse-publish-escape-specials-in-string
   (muse-publishing-directive \"title\") 'document)</lisp>}
 \\author{<lisp>(muse-publishing-directive \"author\")</lisp>}
 \\date{<lisp>(muse-publishing-directive \"date\")</lisp>}
 
-\\maketitle
+\\begin{document}
+
+\\frame{\\titlepage}
 
 <lisp>(and muse-publish-generate-contents
-           \"\\\\tableofcontents\n\\\\newpage\")</lisp>\n\n"
+           \"\\\\frame{\\\\tableofcontents}\")</lisp>\n\n"
   "Header for publishing of lecture notes using LaTeX.
 This may be text or a filename.
 
@@ -489,13 +514,14 @@ and it will do what you expect."
 This is used by the slides and lecture-notes publishing styles."
   (let ((title (cdr (assoc "title" attrs))))
     (goto-char beg)
-    (muse-insert-markup "\\begin{frame}\n")
+    (muse-insert-markup "\\begin{frame}[fragile]\n")
     (when title
       (muse-insert-markup "\\frametitle{")
       (insert title)
       (muse-insert-markup "}\n"))
-    (goto-char end)
-    (muse-insert-markup "\n\\end{frame}")))
+    (save-excursion
+      (goto-char end)
+      (muse-insert-markup "\n\\end{frame}"))))
 
 ;;; Post-publishing functions
 
@@ -561,7 +587,7 @@ default Muse will add a footnote for each link."
       "")))
 
 (defun muse-latex-pdf-browse-file (file)
-  (shell-command (concat "open " file)))
+  (shell-command (format muse-latex-pdf-browser file)))
 
 (defun muse-latex-pdf-generate (file output-path final-target)
   (apply

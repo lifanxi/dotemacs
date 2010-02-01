@@ -1,6 +1,7 @@
 ;;; muse-project.el --- handle Muse projects
 
-;; Copyright (C) 2004, 2005, 2006, 2007, 2008  Free Software Foundation, Inc.
+;; Copyright (C) 2004, 2005, 2006, 2007, 2008, 2009, 2010
+;;   Free Software Foundation, Inc.
 
 ;; This file is part of Emacs Muse.  It is not part of GNU Emacs.
 
@@ -297,7 +298,9 @@ For an example of the use of this function, see
     (when (string= fnd "")
       ;; deal with cases like "foo/" that have a trailing slash
       (setq fnd (file-name-nondirectory (substring entry-dir 0 -1))))
-    (cons `(:base ,style :path ,(expand-file-name output-dir)
+    (cons `(:base ,style :path ,(if (muse-file-remote-p output-dir)
+                                    output-dir
+                                  (expand-file-name output-dir))
                   :include ,(concat "/" fnd "/[^/]+$")
                   ,@other)
           (mapcar (lambda (dir)
@@ -329,6 +332,9 @@ For an example of the use of this function, see
 (defvar muse-current-project nil
   "Project we are currently visiting.")
 (make-variable-buffer-local 'muse-current-project)
+(defvar muse-current-project-global nil
+  "Project we are currently visiting.  This is used to propagate the value
+of `muse-current-project' into a new buffer during publishing.")
 
 (defvar muse-current-output-style nil
   "The output style that we are currently using for publishing files.")
@@ -603,10 +609,12 @@ If PATHNAME is nil, the current buffer's filename is used."
 (defvar muse-project-page-history nil)
 
 (defun muse-read-project-file (project prompt &optional default)
-  (let ((name (funcall muse-completing-read-function
-                       prompt (muse-project-file-alist project)
-                       nil nil nil 'muse-project-page-history
-                       default)))
+  (let* ((file-list (muse-delete-dups
+                     (mapcar #'(lambda (a) (list (car a)))
+                             (muse-project-file-alist project))))
+         (name (funcall muse-completing-read-function
+                       prompt file-list nil nil nil
+                       'muse-project-page-history default)))
     (cons name (muse-project-page-file name project))))
 
 ;;;###autoload
@@ -801,56 +809,64 @@ LOCAL-STYLE to the best directory among REMOTE-STYLES."
     published))
 
 ;;;###autoload
-(defun muse-project-publish-this-file (&optional force)
+(defun muse-project-publish-this-file (&optional force style)
   "Publish the currently-visited file according to `muse-project-alist',
 prompting if more than one style applies.
 
-If FORCE is given, publish the file even if it is up-to-date."
+If FORCE is given, publish the file even if it is up-to-date.
+
+If STYLE is given, use that publishing style rather than
+prompting for one."
   (interactive (list current-prefix-arg))
   (let ((muse-current-project (muse-project-of-file)))
     (if (not muse-current-project)
         ;; file is not part of a project, so fall back to muse-publish
         (if (interactive-p) (call-interactively 'muse-publish-this-file)
-          (muse-publish-this-file nil nil force))
-      (let* ((style (muse-project-get-applicable-style
-                     buffer-file-name (cddr muse-current-project)))
-             (output-dir (muse-style-element :path style))
+          (muse-publish-this-file style nil force))
+      (unless style
+        (setq style (muse-project-get-applicable-style
+                     buffer-file-name (cddr muse-current-project))))
+      (let* ((output-dir (muse-style-element :path style))
+             (muse-current-project-global muse-current-project)
              (muse-current-output-style (list :base (car style)
-                                              :path output-dir)))
-        (unless (muse-publish-file buffer-file-name style output-dir force)
+                                              :path output-dir))
+             (fun (or (muse-style-element :publish style t)
+                      'muse-project-publish-file-default)))
+        (unless (funcall fun buffer-file-name style output-dir force)
           (message (concat "The published version is up-to-date; use"
                            " C-u C-c C-t to force an update.")))))))
 
 (defun muse-project-save-buffers (&optional project)
   (setq project (muse-project project))
   (when project
-    (map-y-or-n-p
-     (function
-      (lambda (buffer)
-        (and (buffer-modified-p buffer)
-             (not (buffer-base-buffer buffer))
-             (or (buffer-file-name buffer)
-                 (progn
-                   (set-buffer buffer)
-                   (and buffer-offer-save
-                        (> (buffer-size) 0))))
-             (with-current-buffer buffer
-               (let ((proj (muse-project-of-file)))
-                 (and proj (string= (car proj)
-                                    (car project)))))
-             (if (buffer-file-name buffer)
-                 (format "Save file %s? "
-                         (buffer-file-name buffer))
-               (format "Save buffer %s? "
-                       (buffer-name buffer))))))
-     (function
-      (lambda (buffer)
-        (set-buffer buffer)
-        (save-buffer)))
-     (buffer-list)
-     '("buffer" "buffers" "save")
-     (if (boundp 'save-some-buffers-action-alist)
-         save-some-buffers-action-alist))))
+    (save-excursion
+      (map-y-or-n-p
+       (function
+        (lambda (buffer)
+          (and (buffer-modified-p buffer)
+               (not (buffer-base-buffer buffer))
+               (or (buffer-file-name buffer)
+                   (progn
+                     (set-buffer buffer)
+                     (and buffer-offer-save
+                          (> (buffer-size) 0))))
+               (with-current-buffer buffer
+                 (let ((proj (muse-project-of-file)))
+                   (and proj (string= (car proj)
+                                      (car project)))))
+               (if (buffer-file-name buffer)
+                   (format "Save file %s? "
+                           (buffer-file-name buffer))
+                 (format "Save buffer %s? "
+                         (buffer-name buffer))))))
+       (function
+        (lambda (buffer)
+          (set-buffer buffer)
+          (save-buffer)))
+       (buffer-list)
+       '("buffer" "buffers" "save")
+       (if (boundp 'save-some-buffers-action-alist)
+           save-some-buffers-action-alist)))))
 
 (defun muse-project-publish-default (project styles &optional force)
   "Publish the pages of PROJECT that need publishing."
@@ -884,7 +900,8 @@ If FORCE is given, publish the file even if it is up-to-date."
                      current-prefix-arg))
   (setq project (muse-project project))
   (let ((styles (cddr project))
-        (muse-current-project project))
+        (muse-current-project project)
+        (muse-current-project-global project))
     ;; determine the style from the project, or else ask
     (unless styles
       (setq styles (list (muse-publish-get-style))))
@@ -917,6 +934,8 @@ If FORCE is given, publish the file even if it is up-to-date."
 
 (defun muse-project-set-variables ()
   "Load project-specific variables."
+  (when (and muse-current-project-global (null muse-current-project))
+    (setq muse-current-project muse-current-project-global))
   (let ((vars (muse-get-keyword :set (cadr muse-current-project)))
         sym custom-set var)
     (while vars

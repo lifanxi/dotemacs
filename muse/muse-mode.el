@@ -1,6 +1,7 @@
 ;;; muse-mode.el --- mode for editing Muse files; has font-lock support
 
-;; Copyright (C) 2004, 2005, 2006, 2007, 2008  Free Software Foundation, Inc.
+;; Copyright (C) 2004, 2005, 2006, 2007, 2008, 2009, 2010
+;;   Free Software Foundation, Inc.
 
 ;; This file is part of Emacs Muse.  It is not part of GNU Emacs.
 
@@ -307,10 +308,11 @@ ARG is passed to `fill-paragraph'."
 Otherwise return nil.
 
 This is used to keep links from being improperly colorized by flyspell."
-  (and (not (get-text-property (if (bobp) (point) (1- (point)))
-                               'muse-link))
-       (save-match-data
-         (null (muse-link-at-point)))))
+  (let ((pos (if (bobp) (point) (1- (point)))))
+    (and (not (get-text-property pos 'muse-no-flyspell))
+         (not (get-text-property pos 'muse-link))
+         (save-match-data
+           (null (muse-link-at-point))))))
 
 ;;;###autoload
 (defun muse-mode-choose-mode ()
@@ -618,18 +620,24 @@ in `muse-project-alist'."
                                             (cddr muse-current-project))
          current-prefix-arg))
   (setq style (muse-style style))
+  (muse-project-publish-this-file nil style)
   (let* ((output-dir (muse-style-element :path style))
-         (result-path (muse-publish-output-file buffer-file-name output-dir
+         (output-suffix (muse-style-element :osuffix style))
+         (output-path (muse-publish-output-file buffer-file-name output-dir
                                                 style))
+         (target (if output-suffix
+                     (concat (muse-path-sans-extension output-path)
+                             output-suffix)
+                   output-path))
          (muse-current-output-style (list :base (car style)
                                           :path output-dir)))
-    (if (not (file-readable-p result-path))
-        (error "Cannot open output file '%s'" result-path)
+    (if (not (file-readable-p target))
+        (error "Cannot open output file '%s'" target)
       (if other-window
-          (find-file-other-window result-path)
+          (find-file-other-window target)
         (let ((func (muse-style-element :browser style t)))
           (if func
-              (funcall func result-path)
+              (funcall func target)
             (message "The %s publishing style does not support browsing."
                      style)))))))
 

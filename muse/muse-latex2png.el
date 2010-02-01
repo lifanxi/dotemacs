@@ -1,6 +1,7 @@
 ;; muse-latex2png.el --- generate PNG images from inline LaTeX code
 
-;; Copyright (C) 2005, 2006, 2007, 2008  Free Software Foundation, Inc.
+;; Copyright (C) 2005, 2006, 2007, 2008, 2009, 2010
+;;   Free Software Foundation, Inc.
 
 ;; Author: Michael Olson <mwolson@gnu.org>
 ;; Created: 12-Oct-2005
@@ -128,13 +129,16 @@ PREAMBLE indicates extra packages and definitions to include."
     (call-process "latex" nil nil nil texfile)
     (if (file-exists-p (concat texfile ".dvi"))
         (progn
-          (shell-command-to-string
-           (concat "dvipng " texfile ".dvi -E"
-                   " -fg " muse-latex2png-fg
-                   " -bg " muse-latex2png-bg " -T tight"
-                   " -x " (format  "%s" (* muse-latex2png-scale-factor 1000))
-                   " -y " (format  "%s" (* muse-latex2png-scale-factor 1000))
-                   " -o " texfile ".png"))
+          (call-process
+           "dvipng" nil nil nil
+           "-E"
+           "-fg" muse-latex2png-fg
+           "-bg" muse-latex2png-bg
+           "-T" "tight"
+           "-x" (format  "%s" (* muse-latex2png-scale-factor 1000))
+           "-y" (format  "%s" (* muse-latex2png-scale-factor 1000))
+           "-o" (concat texfile ".png")
+           (concat texfile ".dvi"))
           (if (file-exists-p (concat texfile ".png"))
               (progn
                 (delete-file (concat texfile ".dvi"))
@@ -209,6 +213,8 @@ See `muse-latex2png-region' for valid keys for ATTRS."
       (muse-publish-mark-read-only beg end)
     (muse-latex2png-region beg end attrs)))
 
+(put 'muse-publish-latex-tag 'muse-dangerous-tag t)
+
 (defun muse-publish-math-tag (beg end)
   "Surround the given region with \"$\" characters.  Then, if the
 current style is not Latex-based, generate an image for the given
@@ -254,6 +260,8 @@ centered in the published output, among other things."
     (if (or (muse-style-derived-p "latex") (muse-style-derived-p "context"))
         (muse-publish-mark-read-only beg (point))
       (muse-latex2png-region beg (point) attrs))))
+
+(put 'muse-publish-math-tag 'muse-dangerous-tag t)
 
 ;;; Insinuate with muse-publish
 

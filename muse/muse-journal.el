@@ -1,6 +1,7 @@
 ;;; muse-journal.el --- keep and publish a journal
 
-;; Copyright (C) 2004, 2005, 2006, 2007, 2008  Free Software Foundation, Inc.
+;; Copyright (C) 2004, 2005, 2006, 2007, 2008, 2009, 2010
+;;   Free Software Foundation, Inc.
 
 ;; This file is part of Emacs Muse.  It is not part of GNU Emacs.
 
@@ -428,7 +429,7 @@ and escapes any remaining non-alphanumeric characters."
                    (string-to-number (match-string 3 date))
                    (string-to-number (match-string 2 date))
                    (string-to-number (match-string 1 date))
-                   (current-time-zone))
+                   nil)
                   date (concat (format-time-string
                                 muse-journal-date-format datestamp)
                                (substring date (match-end 0))))))
@@ -543,7 +544,7 @@ and escapes any remaining non-alphanumeric characters."
                         (string-to-number (match-string 3 date))
                         (string-to-number (match-string 2 date))
                         (string-to-number (match-string 1 date))
-                        (current-time-zone))
+                        nil)
                   date (format-time-string
                         muse-journal-date-format date))))
         (save-restriction
@@ -598,7 +599,7 @@ and escapes any remaining non-alphanumeric characters."
                                     (string-to-number (match-string 3 date))
                                     (string-to-number (match-string 2 date))
                                     (string-to-number (match-string 1 date))
-                                    (current-time-zone))
+                                    nil)
                   ;; make sure that date is in a format that RSS
                   ;; readers can handle
                   date (let ((system-time-locale "C"))
