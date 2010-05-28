@@ -1,3 +1,49 @@
+;; Muse start here
+(setq load-path (add-to-list 'load-path "~/emacs/muse"))
+(require 'muse-mode)
+(require 'muse-html)     ; load publishing styles I use
+(require 'muse-journal)
+(require 'muse-blosxom)
+(require 'muse-wiki)
+(setq muse-project-alist
+      '(("wiki"                      ; my various writings
+         ("~/wiki" :default "index")
+         )
+        ("MyWebPages"
+           ("~/web" :default "index")
+	       (:base "journal-xhtml" :path "~/blog/")
+         )
+        ("Blog2007"
+           ("~/web/2007" :default "index")
+	       (:base "journal-xhtml" :path "~/blog/2007/")
+           (:base "journal-rss" :base-url "http://www.freemindworld.com/blog/2007/" :path "~/blog_publish_rss/")
+         )
+        ("Blog2008"
+           ("~/web/2008" :default "index")
+	       (:base "journal-xhtml" :path "~/blog/2008/")
+           (:base "journal-rss" :base-url "http://www.freemindworld.com/blog/2008/" :path "~/blog_publish_rss/")
+         )
+        ("Blog2009"
+           ("~/web/2009" :default "index")
+	       (:base "journal-xhtml" :path "~/blog/2009/")
+           (:base "journal-rss" :base-url "http://www.freemindworld.com/blog/2009/" :path "~/blog_publish_rss/")
+         )
+        ("Blog2010"
+           ("~/web/2010" :default "index")
+	       (:base "journal-xhtml" :path "~/blog/2010/")
+           (:base "journal-rss" :base-url "http://www.freemindworld.com/blog/2010/" :path "~/blog_publish_rss/")
+         )
+        ("Interest"
+           ("~/web/interest" :default "index")
+	       (:base "xhtml" :path "~/interest/")
+         )
+        ("MyWorks"
+           ("~/web/works" :default "index")
+	       (:base "xhtml" :path "~/works/")
+         )
+
+))
+
 (setq muse-journal-html-entry-template "<div class=\"entry\">
   <div class=\"entry-body\">
     <div class=\"entry-head\">
@@ -70,52 +116,6 @@
 ") (begin-underline . "<span style=\"text-decoration: underline;\">") (end-underline . "</span>") (begin-center . "<p style=\"text-align: center;\">
 ") (end-center . "
 </p>") (end-verse-line . "<br />") (end-last-stanza-line . "<br />") (empty-verse-line . "<br />"))))
-(setq load-path (add-to-list 'load-path "/usr/local/share/emacs/site-lisp/muse"))
-
-;; muse start here
-(require 'muse-mode)
-(require 'muse-html)     ; load publishing styles I use
-(require 'muse-journal)
-(require 'muse-blosxom)
-(require 'muse-wiki)
-(setq muse-project-alist
-      '(("wiki"                      ; my various writings
-         ("~/wiki" :default "index")
-         )
-        ("MyWebPages"
-           ("~/web" :default "index")
-	       (:base "journal-xhtml" :path "~/blog/")
-         )
-        ("Blog2007"
-           ("~/web/2007" :default "index")
-	       (:base "journal-xhtml" :path "~/blog/2007/")
-           (:base "journal-rss" :base-url "http://www.freemindworld.com/blog/2007/" :path "~/blog_publish_rss/")
-         )
-        ("Blog2008"
-           ("~/web/2008" :default "index")
-	       (:base "journal-xhtml" :path "~/blog/2008/")
-           (:base "journal-rss" :base-url "http://www.freemindworld.com/blog/2008/" :path "~/blog_publish_rss/")
-         )
-        ("Blog2009"
-           ("~/web/2009" :default "index")
-	       (:base "journal-xhtml" :path "~/blog/2009/")
-           (:base "journal-rss" :base-url "http://www.freemindworld.com/blog/2009/" :path "~/blog_publish_rss/")
-         )
-        ("Blog2010"
-           ("~/web/2010" :default "index")
-	       (:base "journal-xhtml" :path "~/blog/2010/")
-           (:base "journal-rss" :base-url "http://www.freemindworld.com/blog/2010/" :path "~/blog_publish_rss/")
-         )
-        ("Interest"
-           ("~/web/interest" :default "index")
-	       (:base "xhtml" :path "~/interest/")
-         )
-        ("MyWorks"
-           ("~/web/works" :default "index")
-	       (:base "xhtml" :path "~/works/")
-         )
-
-))
 (setq muse-xhtml-style-sheet "<link rel=\"stylesheet\" type=\"text/css\" charset=\"utf-8\" media=\"all\" href=\"/blog/common/style.css\" />")
 (setq muse-xhtml-footer "</div>\n<div class=\"right\"><!--#include virtual=\"/blog/common/right.shtml\"--> </div>\n<div class=\"clearer\"><span></span></div></div></div>\n<div class=\"footer\"><!--#include virtual=\"/blog/common/foot.shtml\"--></div>\n</body>\n</html>")
 (setq muse-xhtml-extension ".shtml")
