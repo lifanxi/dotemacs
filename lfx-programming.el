@@ -50,8 +50,8 @@
 ;; CEDET hotkeys
 (global-unset-key [C-j])
 (global-set-key [f12] 'semantic-ia-fast-jump)
-(global-set-key (kbd "C-c s d") 'semantic-ia-fast-jump)
-(global-set-key (kbd "C-j") 'semantic-ia-fast-jump)
+;; (global-set-key (kbd "C-c s d") 'semantic-ia-fast-jump)
+;; (global-set-key (kbd "C-j") 'semantic-ia-fast-jump)
 
 ;; Folding
 (when (and window-system (require 'semantic-tag-folding nil 'noerror))
@@ -64,3 +64,7 @@
 )
 
 (define-key c-mode-base-map (kbd "M-/") 'semantic-ia-complete-symbol)
+
+;; cscope
+(require 'xcscope)
+(global-set-key (kbd "C-j") 'cscope-find-global-definition)

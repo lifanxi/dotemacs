@@ -25,7 +25,7 @@
 
 (fset 'yes-or-no-p 'y-or-n-p)
 
-(tool-bar-mode nil)
+(setq tool-bar-mode nil)
 ;; (menu-bar-mode nil)
 
 ;; User Information
