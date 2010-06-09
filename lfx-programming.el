@@ -1,4 +1,4 @@
-;; Set ident for C/C++
+;; Set indent for C/C++
 (add-hook 'c-mode-hook
           '(lambda ( )
              (c-set-style "stroustrup")
