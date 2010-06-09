@@ -51,7 +51,7 @@
 (global-unset-key [C-j])
 (global-set-key [f12] 'semantic-ia-fast-jump)
 ;; (global-set-key (kbd "C-c s d") 'semantic-ia-fast-jump)
-;; (global-set-key (kbd "C-j") 'semantic-ia-fast-jump)
+(global-set-key (kbd "C-i") 'semantic-ia-fast-jump)
 
 ;; Folding
 (when (and window-system (require 'semantic-tag-folding nil 'noerror))
