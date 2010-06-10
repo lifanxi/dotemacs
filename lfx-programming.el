@@ -51,7 +51,7 @@
 (global-unset-key [C-j])
 (global-set-key [f12] 'semantic-ia-fast-jump)
 ;; (global-set-key (kbd "C-c s d") 'semantic-ia-fast-jump)
-(global-set-key (kbd "C-i") 'semantic-ia-fast-jump)
+;; (global-set-key (kbd "C-i") 'semantic-ia-fast-jump)
 
 ;; Folding
 (when (and window-system (require 'semantic-tag-folding nil 'noerror))
@@ -68,3 +68,13 @@
 ;; cscope
 (require 'xcscope)
 (global-set-key (kbd "C-j") 'cscope-find-global-definition)
+
+;; PO mode
+(autoload 'po-mode "po-mode"
+  "Major mode for translators to edit PO files" t)
+(setq auto-mode-alist (cons '("\\.po\\'\\|\\.po\\." . po-mode)
+			    auto-mode-alist))
+
+;;(autoload 'po-find-file-coding-system "po-compat")
+;;(modify-coding-system-alist 'file "\\.po\\'\\|\\.po\\."
+;;			    'po-find-file-coding-system)
