@@ -45,4 +45,4 @@
 (load "lfx-hotkeys")
 
 ;; Efan
-(load "lfx-efan")
+(load "lfx-fanfou")
