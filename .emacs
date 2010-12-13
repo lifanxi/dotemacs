@@ -44,3 +44,5 @@
 ;; Hotkeys
 (load "lfx-hotkeys")
 
+;; Efan
+(load "lfx-efan")
