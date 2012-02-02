@@ -1,7 +1,7 @@
 (global-set-key [f1] 'woman)
 (global-set-key [f3] 'ff-find-other-file)
 (global-set-key [f4] 'goto-line)
-(global-set-key [f5] 'shell)
+(global-set-key [f5] 'eshell)
 (global-set-key [f7] 'compile)
 (global-set-key [f8] 'calendar)
 ;;(global-set-key [f11] 'bs-cycle-previous)

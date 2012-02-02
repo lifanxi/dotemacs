@@ -8,8 +8,8 @@
 (setq inhibit-startup-message t)
 (setq column-number-mode t)
 (setq kill-ring-max 100)
-(setq default-fill-column 75)
-(setq default-major-mode 'text-mode)
+(setq fill-column 75)
+(setq major-mode 'text-mode)
 (setq show-paren-mode t)
 (setq show-paren-style 'parentheses)
 (setq frame-title-format "emacs@%b")
@@ -65,3 +65,6 @@
 
 ;; Efan
 (load "lfx-fanfou")
+
+;; Tramp
+(require 'tramp)
