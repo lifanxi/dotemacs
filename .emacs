@@ -28,9 +28,27 @@
 (setq tool-bar-mode nil)
 ;; (menu-bar-mode nil)
 
+;; Backup Settings
+(setq
+   backup-by-copying t      ; don't clobber symlinks
+   backup-directory-alist
+     '(("." . "~/.saves"))  ; don't litter my fs tree
+   delete-old-versions t
+   kept-new-versions 6
+   kept-old-versions 2
+   version-control t)       ; use versioned backups
+
 ;; User Information
-(setq user-full-name "Byron Li")
-(setq user-mail-address "byron_li@trendmicro.com.cn")
+(setq user-full-name "Li Fanxi")
+(setq user-mail-address "lifanxi@freemindworld.com")
+
+;; Save desktop
+(require 'desktop)
+(desktop-save-mode 1)
+
+;; Unicad
+;; Auto detect file encoding
+(load "unicad")
 
 ;; Text
 (load "lfx-text")
@@ -39,7 +57,8 @@
 (load "lfx-programming")
 
 ;; Muse
-(load "lfx-muse")
+;; No longer using muse
+;; (load "lfx-muse")
 
 ;; Hotkeys
 (load "lfx-hotkeys")

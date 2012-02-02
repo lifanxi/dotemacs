@@ -1,9 +1,8 @@
 CEDET_FILE=cedet-1.0pre7
 MUSE_FILE=muse-3.20
 EMACS_CONF_PATH=~/emacs
-CSCOPE_FILE=cscope-15.7a
 
-all: cedet muse cscope post
+all: cedet post
 
 cedet: $(CEDET_FILE).tar.gz
 	tar xzvf $(CEDET_FILE).tar.gz -C $(EMACS_CONF_PATH)
@@ -15,9 +14,6 @@ muse: $(MUSE_FILE).tar.gz
 	tar xzvf $(MUSE_FILE).tar.gz -C /tmp
 	cp muse.Makefile.defs /tmp/$(MUSE_FILE)/Makefile.defs
 	(cd /tmp/$(MUSE_FILE) && make && make install-bin)
-cscope: $(CSCOPE_FILE).tar.bz2
-	tar xjvf $(CSCOPE_FILE).tar.bz2 -C /tmp
-	cp /tmp/$(CSCOPE_FILE)/contrib/xcscope/xcscope.el $(EMACS_CONF_PATH)/
 
 post:
 	ln -sf ~/emacs/.emacs ~/.emacs
@@ -33,6 +29,3 @@ $(MUSE_FILE).tar.gz:
 
 $(CEDET_FILE).tar.gz:
 	wget http://downloads.sourceforge.net/project/cedet/cedet/1.0pre7/cedet-1.0pre7.tar.gz?use_mirror=cdnetworks-us-2
-
-$(CSCOPE_FILE).tar.bz2:
-	wget "http://downloads.sourceforge.net/project/cscope/cscope/15.7a/cscope-15.7a.tar.bz2?use_mirror=cdnetworks-us-2"
